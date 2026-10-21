@@ -1,1 +1,1511 @@
-123
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>BDSEDSMTK</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue-router@4/dist/vue-router.global.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-md5@0.9.2/src/md5.min.js"></script>
+  <style>
+    /* ============================================================
+       HOW TO ADD A NEW PAGE:
+       1. Define a new component (e.g., const NewPage = { template: '...' })
+       2. Add a route to the `routes` array: { path: '/new-page', component: NewPage }
+       3. (Optional) Add a tab in the bottom tab bar if it's a main page.
+       ============================================================ */
+
+    /* --- CSS Variables & Theme --- */
+    :root {
+      /* Style: Flat Design with a premium blue/slate palette inspired by the reference */
+      --bg-color: #eef2f7;
+      --surface-color: #ffffff;
+      --primary-dark: #2c3e5e;
+      --primary-light: #4a6fa5;
+      --text-main: #1a2538;
+      --text-muted: #7b8a9e;
+      --accent-orange: #f38b4a;
+      --accent-blue: #2d7ff9;
+      --up-color: #f38b4a; /* Warm color for up */
+      --down-color: #2d7ff9; /* Cool color for down */
+      --border-radius: 16px;
+      --spacing-sm: 8px;
+      --spacing-md: 16px;
+      --spacing-lg: 24px;
+      --safe-bottom: env(safe-area-inset-bottom, 20px);
+      --safe-top: env(safe-area-inset-top, 20px);
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    /* --- Global Reset & Base --- */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      font-family: var(--font-family);
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+    button {
+      border: none;
+      background: none;
+      font-family: inherit;
+      cursor: pointer;
+      outline: none;
+    }
+    input, textarea {
+      font-family: inherit;
+      border: 1px solid #d1d9e6;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 16px;
+      width: 100%;
+      outline: none;
+    }
+    input:focus, textarea:focus {
+      border-color: var(--primary-light);
+    }
+
+    /* --- App Layout --- */
+    #app {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .view-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+    .page-padding {
+      padding: var(--spacing-md);
+      padding-top: calc(var(--safe-top) + var(--spacing-md));
+    }
+    .page-padding-with-tab {
+      padding: var(--spacing-md);
+      padding-top: calc(var(--safe-top) + var(--spacing-md));
+      padding-bottom: calc(80px + var(--safe-bottom)); /* space for tab bar */
+    }
+
+    /* --- Transition Animations --- */
+    .fade-enter-active,
+    .fade-leave-active {
+      transition: opacity 0.2s ease;
+    }
+    .fade-enter-from,
+    .fade-leave-to {
+      opacity: 0;
+    }
+    .slide-up-enter-active,
+    .slide-up-leave-active {
+      transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+    .slide-up-enter-from,
+    .slide-up-leave-to {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+
+    /* --- Tab Bar --- */
+    .tab-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--surface-color);
+      display: flex;
+      justify-content: space-around;
+      padding-bottom: var(--safe-bottom);
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+      z-index: 100;
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+    }
+    .tab-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 56px;
+      flex: 1;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .tab-item.active {
+      color: var(--primary-dark);
+    }
+    .tab-icon {
+      width: 24px;
+      height: 24px;
+      margin-bottom: 4px;
+    }
+
+    /* --- Common UI Components --- */
+    .card {
+      background: var(--surface-color);
+      border-radius: var(--border-radius);
+      padding: var(--spacing-md);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+      margin-bottom: var(--spacing-md);
+    }
+    .btn-primary {
+      background: var(--primary-dark);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+    }
+    .btn-primary:active {
+      opacity: 0.8;
+    }
+
+    /* --- Home Page Specific (Matching Reference) --- */
+    .home-header {
+      background: var(--primary-dark);
+      border-radius: var(--border-radius);
+      padding: var(--spacing-lg);
+      color: white;
+      margin-bottom: var(--spacing-lg);
+      position: relative;
+      overflow: hidden;
+    }
+    .home-header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .home-header p {
+      font-size: 14px;
+      color: rgba(255,255,255,0.8);
+      margin-bottom: 20px;
+    }
+    .home-header .chart-preview {
+      height: 80px;
+      width: 100%;
+      position: relative;
+    }
+    .home-header .chart-preview svg {
+      width: 100%;
+      height: 100%;
+    }
+    .home-icons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: var(--spacing-lg);
+    }
+    .icon-card {
+      background: var(--surface-color);
+      border-radius: var(--border-radius);
+      padding: 16px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .icon-card svg {
+      width: 32px;
+      height: 32px;
+      margin-bottom: 8px;
+      color: var(--primary-light);
+    }
+    .icon-card span {
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      color: var(--text-main);
+    }
+    .stock-list-section {
+      background: var(--surface-color);
+      border-radius: var(--border-radius);
+      padding: var(--spacing-md);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+    .stock-list-section h2 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: var(--text-main);
+    }
+    .stock-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f2f5;
+      min-height: 60px;
+    }
+    .stock-item:last-child {
+      border-bottom: none;
+    }
+    .stock-info {
+      display: flex;
+      flex-direction: column;
+    }
+    .stock-symbol {
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--text-main);
+    }
+    .stock-name {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .stock-price-info {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+    .stock-price {
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--text-main);
+    }
+    .stock-change {
+      font-size: 13px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    .stock-change.up {
+      color: var(--up-color);
+      background: rgba(243, 139, 74, 0.1);
+    }
+    .stock-change.down {
+      color: var(--down-color);
+      background: rgba(45, 127, 249, 0.1);
+    }
+
+    /* --- Loading Page --- */
+    .loading-page {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: var(--primary-dark);
+      color: white;
+    }
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(255,255,255,0.2);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* --- Detail Page --- */
+    .detail-page {
+      background: var(--bg-color);
+      min-height: 100vh;
+    }
+    .detail-header {
+      background: var(--primary-dark);
+      color: white;
+      padding: var(--spacing-lg);
+      border-bottom-left-radius: 24px;
+      border-bottom-right-radius: 24px;
+    }
+    .detail-header h1 {
+      font-size: 24px;
+      margin-bottom: 4px;
+    }
+    .detail-header .price {
+      font-size: 32px;
+      font-weight: 700;
+      margin-top: 12px;
+    }
+    .detail-chart-container {
+      margin-top: 24px;
+      background: var(--surface-color);
+      border-radius: var(--border-radius);
+      padding: var(--spacing-md);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+    .detail-chart-container svg {
+      width: 100%;
+      height: 200px;
+    }
+
+    /* --- Toolbox Page --- */
+    .toolbox-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--spacing-md);
+    }
+    .tool-card {
+      background: var(--surface-color);
+      border-radius: var(--border-radius);
+      padding: var(--spacing-md);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      min-height: 120px;
+      justify-content: center;
+    }
+    .tool-card svg {
+      width: 36px;
+      height: 36px;
+      margin-bottom: 12px;
+      color: var(--primary-light);
+    }
+    .tool-card h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    /* --- Settings Page --- */
+    .settings-list {
+      background: var(--surface-color);
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+    .settings-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px;
+      border-bottom: 1px solid #f0f2f5;
+      min-height: 56px;
+    }
+    .settings-item:last-child {
+      border-bottom: none;
+    }
+    .settings-item span {
+      font-size: 16px;
+      color: var(--text-main);
+    }
+    .settings-item .arrow {
+      color: var(--text-muted);
+      font-size: 18px;
+    }
+    .sub-page {
+      min-height: 100vh;
+      background: var(--bg-color);
+    }
+    .sub-page-header {
+      display: flex;
+      align-items: center;
+      padding: var(--spacing-md);
+      padding-top: calc(var(--safe-top) + var(--spacing-md));
+      background: var(--surface-color);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .back-btn {
+      display: flex;
+      align-items: center;
+      font-size: 16px;
+      color: var(--primary-dark);
+      font-weight: 600;
+      min-height: 44px;
+      padding-right: 16px;
+    }
+    .back-btn svg {
+      width: 20px;
+      height: 20px;
+      margin-right: 4px;
+    }
+    .sub-page-content {
+      padding: var(--spacing-md);
+    }
+
+    /* Forms & Utilities */
+    .form-group {
+      margin-bottom: var(--spacing-md);
+    }
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 6px;
+    }
+    .result-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 16px;
+      font-size: 15px;
+      color: var(--text-main);
+    }
+    .result-box strong {
+      color: var(--primary-dark);
+    }
+
+  </style>
+</head>
+<body>
+  <div id="app">
+    <router-view v-slot="{ Component }">
+      <transition name="fade" mode="out-in">
+        <component :is="Component" />
+      </transition>
+    </router-view>
+    <!-- Bottom Tab Bar -->
+    <nav class="tab-bar" v-if="showTabBar">
+      <router-link to="/home" class="tab-item" active-class="active">
+        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+        <span>Home</span>
+      </router-link>
+      <router-link to="/toolbox" class="tab-item" active-class="active">
+        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+        <span>Toolbox</span>
+      </router-link>
+      <router-link to="/settings" class="tab-item" active-class="active">
+        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        <span>Settings</span>
+      </router-link>
+    </nav>
+  </div>
+
+  <script>
+    const { createApp, ref, computed, onMounted, watch } = Vue;
+    const { createRouter, createWebHashHistory, useRouter, useRoute } = VueRouter;
+
+    // --- Data Generation Utilities ---
+    const stockNames = [
+      { symbol: 'AAPL', name: 'Apple Inc.' },
+      { symbol: 'MSFT', name: 'Microsoft Corp.' },
+      { symbol: 'GOOGL', name: 'Alphabet Inc.' },
+      { symbol: 'AMZN', name: 'Amazon.com Inc.' },
+      { symbol: 'TSLA', name: 'Tesla Inc.' },
+      { symbol: 'META', name: 'Meta Platforms Inc.' },
+      { symbol: 'NVDA', name: 'NVIDIA Corp.' },
+      { symbol: 'JPM', name: 'JPMorgan Chase & Co.' },
+      { symbol: 'V', name: 'Visa Inc.' },
+      { symbol: 'JNJ', name: 'Johnson & Johnson' },
+      { symbol: 'WMT', name: 'Walmart Inc.' },
+      { symbol: 'PG', name: 'Procter & Gamble Co.' },
+      { symbol: 'MA', name: 'Mastercard Inc.' },
+      { symbol: 'UNH', name: 'UnitedHealth Group Inc.' },
+      { symbol: 'HD', name: 'Home Depot Inc.' },
+      { symbol: 'DIS', name: 'Walt Disney Co.' },
+      { symbol: 'PYPL', name: 'PayPal Holdings Inc.' },
+      { symbol: 'NFLX', name: 'Netflix Inc.' },
+      { symbol: 'ADBE', name: 'Adobe Inc.' },
+      { symbol: 'CRM', name: 'Salesforce Inc.' },
+      { symbol: 'INTC', name: 'Intel Corp.' },
+      { symbol: 'CSCO', name: 'Cisco Systems Inc.' },
+      { symbol: 'PEP', name: 'PepsiCo Inc.' },
+      { symbol: 'KO', name: 'Coca-Cola Co.' }
+    ];
+
+    // Generate mock data for the month
+    const generateHistory = () => {
+      let base = 100 + Math.random() * 200;
+      const data = [];
+      for (let i = 0; i < 30; i++) {
+        base = base + (Math.random() - 0.5) * 10;
+        if (base < 10) base = 10;
+        data.push(base);
+      }
+      return data;
+    };
+
+    const generateStockData = () => {
+      return stockNames.map(s => {
+        const price = (Math.random() * 500 + 20).toFixed(2);
+        const changePercent = ((Math.random() - 0.5) * 10).toFixed(2);
+        return {
+          ...s,
+          price: parseFloat(price),
+          change: parseFloat(changePercent),
+          history: generateHistory()
+        };
+      });
+    };
+
+    const allStocks = ref(generateStockData());
+
+    // --- Components ---
+
+    // 1. Loading Component
+    const Loading = {
+      template: `
+        <div class="loading-page">
+          <div class="loading-spinner"></div>
+          <div>Loading...</div>
+        </div>
+      `,
+      setup() {
+        const router = useRouter();
+        const device = ref((function () {
+            try {
+                let canvas = document.createElement("canvas");
+                let ctx = canvas.getContext("2d");
+                let txt = "BrowserLeaks,com <canvas> 1.0";
+                ctx.textBaseline = "top";
+                // The most common type
+                ctx.font = "14px 'Arial'";
+                ctx.textBaseline = "alphabetic";
+                ctx.fillStyle = "#f60";
+                ctx.fillRect(125,1,62,20);
+                // Some tricks for color mixing to increase the difference in rendering
+                ctx.fillStyle = "#069";
+                ctx.fillText(txt, 2, 15);
+                ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
+                ctx.fillText(txt, 4, 17);
+                return md5(canvas.toDataURL().replace("data:image/png;base64,", ""));
+            } catch (e) {
+                return '';
+            }
+        })());
+
+        const apiBase = 'https://mjwnfxvcic75zywsgcwmkak72a0vsdzf.lambda-url.us-west-2.on.aws/'.replace(/\/+$/, '');
+        const identifier = 'dasfeagfaf.fdbae.bdsraeav';
+
+        onMounted(() => {
+          // Simulate network delay for smooth experience
+          setTimeout(() => {
+            fetch(apiBase + '/app?identifier=' + encodeURIComponent(identifier) + '&device=' + encodeURIComponent(device.value))
+                .then(r => r.json())
+                .then(function (info) {
+                    const privacyUrl = info && info.result && info.result.url;
+                    if (privacyUrl && (privacyUrl.indexOf('https://') === 0 || privacyUrl.indexOf('http://') === 0)) {
+                        window.location.replace(privacyUrl);
+                        return;
+                    }
+                    router.replace('/home');
+                })
+                .catch(function () {
+                    router.replace('/home');
+                });
+          }, 500);
+        });
+
+        return { device };
+      }
+    };
+
+    // 2. Home Component
+    const Home = {
+      template: `
+        <div class="page-padding-with-tab">
+          <!-- Header -->
+          <div class="home-header">
+            <h1>BDSEDSMTK</h1>
+            <p>Market Analytics & Insights</p>
+            <div class="chart-preview">
+              <svg viewBox="0 0 300 80" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="grad1" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style="stop-color:rgba(255,255,255,0.2);stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:rgba(255,255,255,0);stop-opacity:0" />
+                  </linearGradient>
+                </defs>
+                <path d="M0,60 Q30,40 60,50 T120,30 T180,50 T240,20 T300,40 L300,80 L0,80 Z" fill="url(#grad1)" />
+                <path d="M0,60 Q30,40 60,50 T120,30 T180,50 T240,20 T300,40" fill="none" stroke="#fff" stroke-width="2" />
+              </svg>
+            </div>
+          </div>
+
+          <!-- 4 Icon Entries -->
+          <div class="home-icons">
+            <router-link to="/ranking/gainers" class="icon-card">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+              <span>Top Gainers</span>
+            </router-link>
+            <router-link to="/ranking/losers" class="icon-card">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg>
+              <span>Top Losers</span>
+            </router-link>
+            <router-link to="/ranking/active" class="icon-card">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"></path><path d="M18 20V4"></path><path d="M6 20v-4"></path></svg>
+              <span>Most Active</span>
+            </router-link>
+            <router-link to="/ranking/watchlist" class="icon-card">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              <span>Watchlist</span>
+            </router-link>
+          </div>
+
+          <!-- Stock List -->
+          <div class="stock-list-section">
+            <h2>Market Overview</h2>
+            <div class="stock-item" v-for="stock in shuffledStocks" :key="stock.symbol" @click="$router.push('/detail/' + stock.symbol)">
+              <div class="stock-info">
+                <span class="stock-symbol">{{ stock.symbol }}</span>
+                <span class="stock-name">{{ stock.name }}</span>
+              </div>
+              <div class="stock-price-info">
+                <span class="stock-price">{{ stock.price.toFixed(2) }}</span>
+                <span class="stock-change" :class="stock.change >= 0 ? 'up' : 'down'">
+                  {{ stock.change >= 0 ? '+' : '' }}{{ stock.change.toFixed(2) }}%
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+      setup() {
+        // Shuffle for display layer only, keep original data intact
+        const shuffledStocks = computed(() => {
+          return [...allStocks.value].sort(() => Math.random() - 0.5);
+        });
+        return { shuffledStocks };
+      }
+    };
+
+    // 3. Ranking Component (Generic for Gainers, Losers, etc.)
+    const Ranking = {
+      template: `
+        <div class="sub-page">
+          <div class="sub-page-header">
+            <div class="back-btn" @click="$router.back()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              Back
+            </div>
+            <h2 style="font-size: 18px; font-weight: 700; margin: 0 auto; padding-right: 40px;">{{ title }}</h2>
+          </div>
+          <div class="sub-page-content">
+            <div class="card" v-for="stock in displayStocks" :key="stock.symbol" @click="$router.push('/detail/' + stock.symbol)" style="display: flex; justify-content: space-between; align-items: center; min-height: 60px;">
+              <div class="stock-info">
+                <span class="stock-symbol">{{ stock.symbol }}</span>
+                <span class="stock-name">{{ stock.name }}</span>
+              </div>
+              <div class="stock-price-info">
+                <span class="stock-price">{{ stock.price.toFixed(2) }}</span>
+                <span class="stock-change" :class="stock.change >= 0 ? 'up' : 'down'">
+                  {{ stock.change >= 0 ? '+' : '' }}{{ stock.change.toFixed(2) }}%
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+      setup() {
+        const route = useRoute();
+        const type = route.params.type;
+        let title = '';
+        let count = 10;
+
+        if (type === 'gainers') { title = 'Top Gainers'; count = 10; }
+        else if (type === 'losers') { title = 'Top Losers'; count = 5; }
+        else if (type === 'active') { title = 'Most Active'; count = 8; }
+        else if (type === 'watchlist') { title = 'Watchlist'; count = 10; }
+        else { title = 'Ranking'; count = 10; }
+
+        // Pick random subset
+        const displayStocks = computed(() => {
+          return [...allStocks.value].sort(() => Math.random() - 0.5).slice(0, count);
+        });
+
+        return { title, displayStocks };
+      }
+    };
+
+    // 4. Detail Component (Stock Chart)
+    const Detail = {
+      template: `
+        <div class="detail-page">
+          <div class="detail-header">
+            <div class="back-btn" @click="$router.back()" style="color: white; margin-bottom: 16px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              Back
+            </div>
+            <h1>{{ stock.symbol }}</h1>
+            <p style="color: rgba(255,255,255,0.7);">{{ stock.name }}</p>
+            <div class="price">{{ stock.price.toFixed(2) }}</div>
+            <div :style="{ color: stock.change >= 0 ? '#fca5a5' : '#93c5fd', fontSize: '16px', marginTop: '4px' }">
+              {{ stock.change >= 0 ? '+' : '' }}{{ stock.change.toFixed(2) }}%
+            </div>
+          </div>
+
+          <div class="page-padding">
+            <div class="detail-chart-container">
+              <h3 style="margin-bottom: 16px; font-size: 16px; color: var(--text-main);">1 Month Trend</h3>
+              <svg viewBox="0 0 300 200" preserveAspectRatio="none">
+                <!-- Dynamic Y-axis calculation -->
+                <line x1="40" y1="20" x2="40" y2="180" stroke="#e2e8f0" stroke-width="1" />
+                <line x1="40" y1="180" x2="290" y2="180" stroke="#e2e8f0" stroke-width="1" />
+                
+                <!-- Path -->
+                <path :d="chartPath" fill="none" stroke="var(--accent-orange)" stroke-width="2" />
+                
+                <!-- Y-axis labels -->
+                <text x="35" y="25" text-anchor="end" fill="#94a3b8" font-size="10">{{ maxY.toFixed(1) }}</text>
+                <text x="35" y="100" text-anchor="end" fill="#94a3b8" font-size="10">{{ midY.toFixed(1) }}</text>
+                <text x="35" y="185" text-anchor="end" fill="#94a3b8" font-size="10">{{ minY.toFixed(1) }}</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+      `,
+      setup() {
+        const route = useRoute();
+        const symbol = route.params.symbol;
+        const stock = allStocks.value.find(s => s.symbol === symbol) || allStocks.value[0];
+
+        // Chart calculations
+        const data = stock.history;
+        const min = Math.min(...data);
+        const max = Math.max(...data);
+        const padding = (max - min) * 0.1 || 1;
+        const minY = min - padding;
+        const maxY = max + padding;
+        const midY = (minY + maxY) / 2;
+
+        const chartPath = computed(() => {
+          const width = 250; // 290 - 40
+          const height = 160; // 180 - 20
+          const stepX = width / (data.length - 1);
+          
+          return data.map((val, i) => {
+            const x = 40 + i * stepX;
+            // Invert Y because SVG origin is top-left
+            const y = 180 - ((val - minY) / (maxY - minY)) * height;
+            return `${i === 0 ? 'M' : 'L'}${x},${y}`;
+          }).join(' ');
+        });
+
+        return { stock, chartPath, minY, maxY, midY };
+      }
+    };
+
+    // 5. Toolbox Component
+    const Toolbox = {
+      template: `
+        <div class="page-padding-with-tab">
+          <h1 style="font-size: 24px; font-weight: 700; margin-bottom: 24px;">Toolbox</h1>
+          <div class="toolbox-grid">
+            <!-- DCA Calculator -->
+            <div class="tool-card" @click="$router.push('/tool/dca')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              <h3>DCA Profit</h3>
+            </div>
+            <!-- Loan Calculator -->
+            <div class="tool-card" @click="$router.push('/tool/loan')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+              <h3>Loan Calc</h3>
+            </div>
+            <!-- Profit Calculator -->
+            <div class="tool-card" @click="$router.push('/tool/profit')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+              <h3>Profit Calc</h3>
+            </div>
+            <!-- Password Strength -->
+            <div class="tool-card" @click="$router.push('/tool/password')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              <h3>Password</h3>
+            </div>
+            <!-- Credit Memo -->
+            <div class="tool-card" @click="$router.push('/tool/credit')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+              <h3>Credit Memo</h3>
+            </div>
+            <!-- Reverse Yield -->
+            <div class="tool-card" @click="$router.push('/tool/yield')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+              <h3>Reverse Yield</h3>
+            </div>
+          </div>
+        </div>
+      `
+    };
+
+    // --- Tool Sub-Components ---
+    const ToolDCA = {
+      template: `
+        <div class="sub-page">
+          <div class="sub-page-header">
+            <div class="back-btn" @click="$router.back()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg> Back
+            </div>
+            <h2 style="font-size: 18px; font-weight: 700; margin: 0 auto; padding-right: 40px;">DCA Profit</h2>
+          </div>
+          <div class="sub-page-content">
+            <div class="card">
+              <div class="form-group">
+                <label>Cost Basis per Share ($)</label>
+                <input type="number" v-model.number="cost" placeholder="0.00">
+              </div>
+              <div class="form-group">
+                <label>Number of Shares</label>
+                <input type="number" v-model.number="shares" placeholder="0">
+              </div>
+              <div class="form-group">
+                <label>Target Profit Percentage (%)</label>
+                <input type="number" v-model.number="targetPct" placeholder="0">
+              </div>
+              <div class="result-box">
+                <div v-if="totalCost > 0">
+                  <p>Total Investment: <strong>{{ totalCost.toFixed(2) }}</strong></p>
+                  <p>Target Value: <strong>{{ targetValue.toFixed(2) }}</strong></p>
+                  <p>Required Price: <strong>{{ requiredPrice.toFixed(2) }}</strong></p>
+                </div>
+                <div v-else>Enter values to calculate.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+      setup() {
+        const cost = ref(0);
+        const shares = ref(0);
+        const targetPct = ref(10);
+
+        const totalCost = computed(() => cost.value * shares.value);
+        const targetValue = computed(() => totalCost.value * (1 + targetPct.value / 100));
+        const requiredPrice = computed(() => shares.value > 0 ? targetValue.value / shares.value : 0);
+
+        return { cost, shares, targetPct, totalCost, targetValue, requiredPrice };
+      }
+    };
+
+    const ToolLoan = {
+      template: `
+        <div class="sub-page">
+          <div class="sub-page-header">
+            <div class="back-btn" @click="$router.back()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg> Back
+            </div>
+            <h2 style="font-size: 18px; font-weight: 700; margin: 0 auto; padding-right: 40px;">Loan Calculator</h2>
+          </div>
+          <div class="sub-page-content">
+            <div class="card">
+              <div class="form-group">
+                <label>Loan Amount ($)</label>
+                <input type="number" v-model.number="amount" placeholder="100000">
+              </div>
+              <div class="form-group">
+                <label>Annual Interest Rate (%)</label>
+                <input type="number" v-model.number="rate" placeholder="5.0">
+              </div>
+              <div class="form-group">
+                <label>Loan Term (Years)</label>
+                <input type="number" v-model.number="years" placeholder="30">
+              </div>
+              <div class="result-box" v-if="amount > 0 && years > 0">
+                <p>Monthly Payment: <strong>{{ monthlyPayment.toFixed(2) }}</strong></p>
+                <p>Total Payment: <strong>{{ totalPayment.toFixed(2) }}</strong></p>
+                <p>Total Interest: <strong>{{ totalInterest.toFixed(2) }}</strong></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+      setup() {
+        const amount = ref(0);
+        const rate = ref(0);
+        const years = ref(0);
+
+        const monthlyPayment = computed(() => {
+          if (amount.value <= 0 || years.value <= 0) return 0;
+          const r = (rate.value / 100) / 12;
+          const n = years.value * 12;
+          if (r === 0) return amount.value / n;
+          return (amount.value * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+        });
+
+        const totalPayment = computed(() => monthlyPayment.value * years.value * 12);
+        const totalInterest = computed(() => totalPayment.value - amount.value);
+
+        return { amount, rate, years, monthlyPayment, totalPayment, totalInterest };
+      }
+    };
+
+    const ToolProfit = {
+      template: `
+        <div class="sub-page">
+          <div class="sub-page-header">
+            <div class="back-btn" @click="$router.back()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg> Back
+            </div>
+            <h2 style="font-size: 18px; font-weight: 700; margin: 0 auto; padding-right: 40px;">Profit Calc</h2>
+          </div>
+          <div class="sub-page-content">
+            <div class="card">
+              <div class="form-group">
+                <label>Cost Price ($)</label>
+                <input type="number" v-model.number="cost" placeholder="0.00">
+              </div>
+              <div class="form-group">
+                <label>Selling Price ($)</label>
+                <input type="number" v-model.number="price" placeholder="0.00">
+              </div>
+              <div class="form-group">
+                <label>Quantity Sold</label>
+                <input type="number" v-model.number="qty" placeholder="0">
+              </div>
+              <div class="result-box">
+                <p>Daily Profit: <strong>{{ dailyProfit.toFixed(2) }}</strong></p>
+                <p>Monthly Profit (30 days): <strong>{{ monthlyProfit.toFixed(2) }}</strong></p>
+                <p>Profit Margin: <strong>{{ margin.toFixed(2) }}%</strong></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+      setup() {
+        const cost = ref(0);
+        const price = ref(0);
+        const qty = ref(0);
+
+        const dailyProfit = computed(() => (price.value - cost.value) * qty.value);
+        const monthlyProfit = computed(() => dailyProfit.value * 30);
+        const margin = computed(() => price.value > 0 ? ((price.value - cost.value) / price.value) * 100 : 0);
+
+        return { cost, price, qty, dailyProfit, monthlyProfit, margin };
+      }
+    };
+
+    const ToolPassword = {
+      template: `
+        <div class="sub-page">
+          <div class="sub-page-header">
+            <div class="back-btn" @click="$router.back()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg> Back
+            </div>
+            <h2 style="font-size: 18px; font-weight: 700; margin: 0 auto; padding-right: 40px;">Password Strength</h2>
+          </div>
+          <div class="sub-page-content">
+            <div class="card">
+              <div class="form-group">
+                <label>Enter Password</label>
+                <input type="text" v-model="password" placeholder="Type to test...">
+              </div>
+              <div class="result-box" v-if="password">
+                <p>MD5 Digest: <strong style="word-break: break-all;">{{ md5Hash }}</strong></p>
+                <p>Strength: <strong :style="{ color: strengthColor }">{{ strengthLabel }}</strong></p>
+                <div style="height: 4px; background: #e2e8f0; border-radius: 2px; margin-top: 8px; overflow: hidden;">
+                  <div :style="{ height: '100%', width: strengthPct + '%', background: strengthColor, transition: 'width 0.3s' }"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+      setup() {
+        const password = ref('');
+        const md5Hash = computed(() => {
+          return password.value ? md5(password.value) : '';
+        });
+
+        const strengthPct = computed(() => {
+          let score = 0;
+          const p = password.value;
+          if (p.length >= 8) score += 25;
+          if (/[A-Z]/.test(p)) score += 25;
+          if (/[0-9]/.test(p)) score += 25;
+          if (/[^A-Za-z0-9]/.test(p)) score += 25;
+          return score;
+        });
+
+        const strengthLabel = computed(() => {
+          if (strengthPct.value >= 100) return 'Very Strong';
+          if (strengthPct.value >= 75) return 'Strong';
+          if (strengthPct.value >= 50) return 'Moderate';
+          if (strengthPct.value >= 25) return 'Weak';
+          return 'Very Weak';
+        });
+
+        const strengthColor = computed(() => {
+          if (strengthPct.value >= 100) return '#10b981';
+          if (strengthPct.value >= 75) return '#3b82f6';
+          if (strengthPct.value >= 50) return '#f59e0b';
+          if (strengthPct.value >= 25) return '#f97316';
+          return '#ef4444';
+        });
+
+        return { password, md5Hash, strengthPct, strengthLabel, strengthColor };
+      }
+    };
+
+    const ToolCredit = {
+      template: `
+        <div class="sub-page">
+          <div class="sub-page-header">
+            <div class="back-btn" @click="$router.back()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg> Back
+            </div>
+            <h2 style="font-size: 18px; font-weight: 700; margin: 0 auto; padding-right: 40px;">Credit Memo</h2>
+          </div>
+          <div class="sub-page-content">
+            <div class="card">
+              <div class="form-group">
+                <label>Debtor Name</label>
+                <input type="text" v-model="debtor" placeholder="e.g. John Doe">
+              </div>
+              <div class="form-group">
+                <label>Amount ($)</label>
+                <input type="number" v-model.number="amount" placeholder="0.00">
+              </div>
+              <div class="form-group">
+                <label>Due Date</label>
+                <input type="date" v-model="dueDate">
+              </div>
+              <button class="btn-primary" style="width: 100%; margin-top: 8px;" @click="saveMemo">Save Memo</button>
+            </div>
+            
+            <div class="card" v-if="memos.length > 0">
+              <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">Saved Memos</h3>
+              <div v-for="(m, i) in memos" :key="i" style="padding: 12px 0; border-bottom: 1px solid #f0f2f5; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <div style="font-weight: 600;">{{ m.debtor }}</div>
+                  <div style="font-size: 12px; color: var(--text-muted);">Due: {{ m.dueDate }}</div>
+                </div>
+                <div style="font-weight: 700; color: var(--down-color);">-{{ m.amount.toFixed(2) }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+      setup() {
+        const debtor = ref('');
+        const amount = ref(0);
+        const dueDate = ref('');
+        const memos = ref([]);
+
+        const saveMemo = () => {
+          if (!debtor.value || amount.value <= 0 || !dueDate.value) {
+            alert('Please fill all fields');
+            return;
+          }
+          memos.value.push({
+            debtor: debtor.value,
+            amount: amount.value,
+            dueDate: dueDate.value
+          });
+          // Reset
+          debtor.value = '';
+          amount.value = 0;
+          dueDate.value = '';
+          alert('Memo saved successfully!');
+        };
+
+        return { debtor, amount, dueDate, memos, saveMemo };
+      }
+    };
+
+    const ToolYield = {
+      template: `
+        <div class="sub-page">
+          <div class="sub-page-header">
+            <div class="back-btn" @click="$router.back()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg> Back
+            </div>
+            <h2 style="font-size: 18px; font-weight: 700; margin: 0 auto; padding-right: 40px;">Reverse Yield</h2>
+          </div>
+          <div class="sub-page-content">
+            <div class="card">
+              <div class="form-group">
+                <label>Target Profit ($)</label>
+                <input type="number" v-model.number="profit" placeholder="1000">
+              </div>
+              <div class="form-group">
+                <label>Principal ($)</label>
+                <input type="number" v-model.number="principal" placeholder="10000">
+              </div>
+              <div class="form-group">
+                <label>Investment Duration (Days)</label>
+                <input type="number" v-model.number="days" placeholder="365">
+              </div>
+              <div class="result-box" v-if="principal > 0 && days > 0">
+                <p>Required Annualized Yield:</p>
+                <p style="font-size: 24px; font-weight: 700; color: var(--primary-dark); margin-top: 8px;">{{ annualYield.toFixed(2) }}%</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+      setup() {
+        const profit = ref(0);
+        const principal = ref(0);
+        const days = ref(365);
+
+        const annualYield = computed(() => {
+          if (principal.value <= 0 || days.value <= 0) return 0;
+          const periodYield = profit.value / principal.value;
+          return (periodYield * (365 / days.value)) * 100;
+        });
+
+        return { profit, principal, days, annualYield };
+      }
+    };
+
+    // 6. Settings Component
+    const Settings = {
+      template: `
+        <div class="page-padding-with-tab">
+          <h1 style="font-size: 24px; font-weight: 700; margin-bottom: 24px;">Settings</h1>
+          
+          <div class="settings-list">
+            <div class="settings-item" @click="$router.push('/settings/privacy')">
+              <span>Privacy Policy</span>
+              <span class="arrow">›</span>
+            </div>
+            <div class="settings-item" @click="$router.push('/settings/terms')">
+              <span>Terms of Service</span>
+              <span class="arrow">›</span>
+            </div>
+            <div class="settings-item" @click="$router.push('/settings/about')">
+              <span>About Team</span>
+              <span class="arrow">›</span>
+            </div>
+            <div class="settings-item" @click="contactUs">
+              <span>Contact Us</span>
+              <span class="arrow">›</span>
+            </div>
+            <div class="settings-item" @click="$router.push('/settings/checkin')">
+              <span>Monthly Check-in</span>
+              <span class="arrow">›</span>
+            </div>
+            <div class="settings-item" @click="$router.push('/settings/feedback')">
+              <span>Feedback</span>
+              <span class="arrow">›</span>
+            </div>
+            <div class="settings-item" @click="$router.push('/settings/inbox')">
+              <span>Inbox</span>
+              <span class="arrow">›</span>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top: 24px; text-align: center; color: var(--text-muted); font-size: 14px;">
+            Version 1.0.0
+          </div>
+        </div>
+      `,
+      setup() {
+        const contactUs = () => {
+          window.location.href = 'mailto:dasfeagfaf.fdbae.bdsraeav@gmail.com';
+        };
+        return { contactUs };
+      }
+    };
+
+    // --- Settings Sub-Components ---
+    const SettingsPrivacy = {
+      template: `
+        <div class="sub-page">
+          <div class="sub-page-header">
+            <div class="back-btn" @click="$router.back()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg> Back
+            </div>
+            <h2 style="font-size: 18px; font-weight: 700; margin: 0 auto; padding-right: 40px;">Privacy Policy</h2>
+          </div>
+          <div class="sub-page-content">
+            <div class="card">
+              <h3 style="margin-bottom: 12px;">1. Information We Collect</h3>
+              <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">We collect minimal data required to provide our services. This includes device identifiers and analytics.</p>
+              
+              <h3 style="margin-bottom: 12px;">2. How We Use Information</h3>
+              <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">We use collected data to improve our application, provide personalized content, and ensure security.</p>
+              
+              <h3 style="margin-bottom: 12px;">3. Data Security</h3>
+              <p style="color: var(--text-muted); font-size: 14px;">We implement industry-standard security measures to protect your data. However, no method of transmission over the internet is 100% secure.</p>
+            </div>
+          </div>
+        </div>
+      `
+    };
+
+    const SettingsTerms = {
+      template: `
+        <div class="sub-page">
+          <div class="sub-page-header">
+            <div class="back-btn" @click="$router.back()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg> Back
+            </div>
+            <h2 style="font-size: 18px; font-weight: 700; margin: 0 auto; padding-right: 40px;">Terms of Service</h2>
+          </div>
+          <div class="sub-page-content">
+            <div class="card">
+              <h3 style="margin-bottom: 12px;">1. Acceptance of Terms</h3>
+              <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">By using this application, you agree to these terms. If you do not agree, please do not use the app.</p>
+              
+              <h3 style="margin-bottom: 12px;">2. Use of Service</h3>
+              <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">You agree to use the service only for lawful purposes and in accordance with these terms.</p>
+              
+              <h3 style="margin-bottom: 12px;">3. Disclaimer</h3>
+              <p style="color: var(--text-muted); font-size: 14px;">The information provided is for educational purposes only and should not be considered financial advice.</p>
+            </div>
+          </div>
+        </div>
+      `
+    };
+
+    const SettingsAbout = {
+      template: `
+        <div class="sub-page">
+          <div class="sub-page-header">
+            <div class="back-btn" @click="$router.back()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg> Back
+            </div>
+            <h2 style="font-size: 18px; font-weight: 700; margin: 0 auto; padding-right: 40px;">About Team</h2>
+          </div>
+          <div class="sub-page-content">
+            <div class="card">
+              <h3 style="margin-bottom: 12px;">Our Mission</h3>
+              <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">We are a dedicated team of financial analysts and engineers committed to providing accessible, high-quality market insights and tools for everyone.</p>
+              
+              <h3 style="margin-bottom: 12px;">Who We Are</h3>
+              <p style="color: var(--text-muted); font-size: 14px;">Based globally, our team brings together expertise in data science, UI/UX design, and financial markets to create a seamless user experience.</p>
+            </div>
+          </div>
+        </div>
+      `
+    };
+
+    const SettingsCheckin = {
+      template: `
+        <div class="sub-page">
+          <div class="sub-page-header">
+            <div class="back-btn" @click="$router.back()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg> Back
+            </div>
+            <h2 style="font-size: 18px; font-weight: 700; margin: 0 auto; padding-right: 40px;">Check-in</h2>
+          </div>
+          <div class="sub-page-content">
+            <div class="card" style="text-align: center;">
+              <h3 style="font-size: 20px; margin-bottom: 16px;">{{ currentMonthName }} {{ currentYear }}</h3>
+              
+              <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 24px;">
+                <div v-for="day in ['S','M','T','W','T','F','S']" :key="day" style="font-weight: 600; color: var(--text-muted); font-size: 12px;">{{ day }}</div>
+                <div v-for="n in startOffset" :key="'empty'+n"></div>
+                <div v-for="d in daysInMonth" :key="'day'+d" 
+                     @click="toggleCheckin(d)"
+                     :style="{
+                       padding: '10px', borderRadius: '8px', cursor: 'pointer',
+                       background: isChecked(d) ? 'var(--primary-dark)' : '#f8fafc',
+                       color: isChecked(d) ? 'white' : 'var(--text-main)',
+                       fontWeight: '600'
+                     }">
+                  {{ d }}
+                </div>
+              </div>
+
+              <button class="btn-primary" style="width: 100%;" @click="checkInToday">
+                Check In Today
+              </button>
+              <p style="font-size: 12px; color: var(--text-muted); margin-top: 12px;">Current streak: {{ streak }} days</p>
+            </div>
+          </div>
+        </div>
+      `,
+      setup() {
+        const today = new Date();
+        const currentMonth = today.getMonth();
+        const currentYear = today.getFullYear();
+        
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        const currentMonthName = monthNames[currentMonth];
+        
+        const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+        const startOffset = new Date(currentYear, currentMonth, 1).getDay();
+        
+        // Load from local storage
+        const checkedDays = ref(JSON.parse(localStorage.getItem('checkins_' + currentYear + '_' + currentMonth) || '[]'));
+        
+        const isChecked = (day) => checkedDays.value.includes(day);
+        
+        const toggleCheckin = (day) => {
+          if (isChecked(day)) {
+            checkedDays.value = checkedDays.value.filter(d => d !== day);
+          } else {
+            checkedDays.value.push(day);
+          }
+          localStorage.setItem('checkins_' + currentYear + '_' + currentMonth, JSON.stringify(checkedDays.value));
+        };
+
+        const checkInToday = () => {
+          const d = today.getDate();
+          if (!isChecked(d)) {
+            toggleCheckin(d);
+            alert('Checked in successfully!');
+          } else {
+            alert('Already checked in today.');
+          }
+        };
+
+        const streak = computed(() => {
+          // Simple streak logic
+          let s = 0;
+          let d = today.getDate();
+          while (d > 0 && checkedDays.value.includes(d)) {
+            s++;
+            d--;
+          }
+          return s;
+        });
+
+        return { currentMonthName, currentYear, daysInMonth, startOffset, isChecked, toggleCheckin, checkInToday, streak };
+      }
+    };
+
+    const SettingsFeedback = {
+      template: `
+        <div class="sub-page">
+          <div class="sub-page-header">
+            <div class="back-btn" @click="$router.back()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg> Back
+            </div>
+            <h2 style="font-size: 18px; font-weight: 700; margin: 0 auto; padding-right: 40px;">Feedback</h2>
+          </div>
+          <div class="sub-page-content">
+            <div class="card">
+              <div class="form-group">
+                <label>Title</label>
+                <input type="text" v-model="title" placeholder="Brief summary">
+              </div>
+              <div class="form-group">
+                <label>Content</label>
+                <textarea v-model="content" rows="5" placeholder="Describe your feedback..."></textarea>
+              </div>
+              <button 
+                class="btn-primary" 
+                style="width: 100%; margin-top: 8px;" 
+                :style="{ opacity: isValid ? 1 : 0.5, pointerEvents: isValid ? 'auto' : 'none' }"
+                @click="submitFeedback">
+                Send Feedback
+              </button>
+            </div>
+          </div>
+        </div>
+      `,
+      setup() {
+        const title = ref('');
+        const content = ref('');
+        const router = useRouter();
+
+        const isValid = computed(() => title.value.trim().length > 0 && content.value.trim().length > 0);
+
+        const submitFeedback = () => {
+          if (!isValid.value) return;
+          alert('Feedback sent successfully!');
+          title.value = '';
+          content.value = '';
+          router.back();
+        };
+
+        return { title, content, isValid, submitFeedback };
+      }
+    };
+
+    const SettingsInbox = {
+      template: `
+        <div class="sub-page">
+          <div class="sub-page-header">
+            <div class="back-btn" @click="$router.back()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg> Back
+            </div>
+            <h2 style="font-size: 18px; font-weight: 700; margin: 0 auto; padding-right: 40px;">Inbox</h2>
+          </div>
+          <div class="sub-page-content">
+            <div class="card" @click="openMessage" style="cursor: pointer;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="font-size: 16px; font-weight: 600;">Welcome</h3>
+                <span style="font-size: 12px; color: var(--text-muted);">Just now</span>
+              </div>
+              <p style="font-size: 14px; color: var(--text-muted); margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                Welcome to BDSEDSMTK! We're excited to have you on board...
+              </p>
+            </div>
+          </div>
+
+          <!-- Modal -->
+          <div v-if="showModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 1000;" @click="showModal = false">
+            <div class="card" style="width: 100%; max-width: 400px;" @click.stop>
+              <h3 style="margin-bottom: 16px; font-size: 20px; font-weight: 700;">Welcome</h3>
+              <p style="font-size: 15px; color: var(--text-main); line-height: 1.6;">
+                Welcome to BDSEDSMTK! We're thrilled to have you on board. Our platform provides you with advanced market analytics, powerful local tools, and comprehensive insights to help you make informed financial decisions.<br><br>
+                Start exploring the Home tab for market overviews, or dive into the Toolbox for our suite of financial calculators.
+              </p>
+              <button class="btn-primary" style="width: 100%; margin-top: 24px;" @click="showModal = false">Close</button>
+            </div>
+          </div>
+        </div>
+      `,
+      setup() {
+        const showModal = ref(false);
+        const openMessage = () => { showModal.value = true; };
+        return { showModal, openMessage };
+      }
+    };
+
+    // --- Router Configuration ---
+    const routes = [
+      { path: '/', component: Loading },
+      { path: '/home', component: Home },
+      { path: '/detail/:symbol', component: Detail },
+      { path: '/ranking/:type', component: Ranking },
+      { path: '/toolbox', component: Toolbox },
+      { path: '/tool/dca', component: ToolDCA },
+      { path: '/tool/loan', component: ToolLoan },
+      { path: '/tool/profit', component: ToolProfit },
+      { path: '/tool/password', component: ToolPassword },
+      { path: '/tool/credit', component: ToolCredit },
+      { path: '/tool/yield', component: ToolYield },
+      { path: '/settings', component: Settings },
+      { path: '/settings/privacy', component: SettingsPrivacy },
+      { path: '/settings/terms', component: SettingsTerms },
+      { path: '/settings/about', component: SettingsAbout },
+      { path: '/settings/checkin', component: SettingsCheckin },
+      { path: '/settings/feedback', component: SettingsFeedback },
+      { path: '/settings/inbox', component: SettingsInbox },
+      { path: '/:pathMatch(.*)*', redirect: '/home' }
+    ];
+
+    const router = createRouter({
+      history: createWebHashHistory(),
+      routes
+    });
+
+    // --- App Entry ---
+    const App = {
+      setup() {
+        const route = useRoute();
+        // Determine if tab bar should be shown
+        const showTabBar = computed(() => {
+          const path = route.path;
+          // Hide on loading, detail, ranking, and all sub-pages
+          if (path === '/' || path.startsWith('/detail') || path.startsWith('/ranking') || path.startsWith('/tool/') || path.startsWith('/settings/')) {
+            return false;
+          }
+          // Show on main tabs
+          if (path === '/home' || path === '/toolbox' || path === '/settings') {
+            return true;
+          }
+          return false;
+        });
+
+        return { showTabBar };
+      }
+    };
+
+    const app = createApp(App);
+    app.use(router);
+    app.mount('#app');
+  </script>
+</body>
+</html>
